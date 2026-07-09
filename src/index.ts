@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import { OCCASIONS, type Occasion } from "./rubric.js";
 import { runFitCheck } from "./vision.js";
+import { fitCheckPaymentMiddleware } from "./payment.js";
 
 const app = express();
 const upload = multer({
@@ -16,8 +17,9 @@ app.get("/health", (_req, res) => {
 });
 
 // A2MCP entrypoint: POST /fit-check, multipart form with "photo" file + "occasion" field.
-// Payment (x402) is not wired up yet — see TODO below.
-app.post("/fit-check", upload.single("photo"), async (req, res) => {
+// fitCheckPaymentMiddleware runs first — unpaid/unsigned requests get a 402 and never
+// reach multer or the vision call below.
+app.post("/fit-check", fitCheckPaymentMiddleware, upload.single("photo"), async (req, res) => {
   try {
     const occasion = req.body.occasion as Occasion | undefined;
 
@@ -57,7 +59,3 @@ app.post("/fit-check", upload.single("photo"), async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Fit Check listening on port ${PORT}`);
 });
-
-// TODO next: wire up x402 payment-required flow per OKX A2MCP requirements
-// (see okx-agent-payments-protocol skill) before registering as an ASP.
-// TODO next: generate a shareable result card (image) from the JSON verdict.
