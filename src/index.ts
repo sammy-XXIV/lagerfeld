@@ -56,6 +56,12 @@ app.post("/fit-check", fitCheckPaymentMiddleware, upload.single("photo"), async 
   }
 });
 
+// x402 convention: non-POST requests to a paid endpoint should return 405, not fall
+// through to a generic 404.
+app.all("/fit-check", (req, res) => {
+  res.set("Allow", "POST").status(405).json({ error: "method not allowed, use POST" });
+});
+
 app.listen(PORT, () => {
   console.log(`Fit Check listening on port ${PORT}`);
 });
