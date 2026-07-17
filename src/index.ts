@@ -4,6 +4,10 @@ import { OCCASIONS, type Occasion } from "./rubric.js";
 import { runFitCheck } from "./vision.js";
 import { fitCheckPaymentMiddleware } from "./payment.js";
 
+// Process-level guards: a malformed request must never take the service down.
+process.on("uncaughtException", (err) => console.error("uncaughtException:", err));
+process.on("unhandledRejection", (err) => console.error("unhandledRejection:", err));
+
 const app = express();
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -60,6 +64,12 @@ app.post("/fit-check", fitCheckPaymentMiddleware, upload.single("photo"), async 
 // through to a generic 404.
 app.all("/fit-check", (req, res) => {
   res.set("Allow", "POST").status(405).json({ error: "method not allowed, use POST" });
+});
+
+// Catch-all error handler — no thrown error bubbles into an unhandled state.
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("route error:", err);
+  if (!res.headersSent) res.status(500).json({ error: "internal error" });
 });
 
 app.listen(PORT, () => {
