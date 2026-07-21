@@ -9,6 +9,7 @@ process.on("uncaughtException", (err) => console.error("uncaughtException:", err
 process.on("unhandledRejection", (err) => console.error("unhandledRejection:", err));
 
 const app = express();
+app.use(express.json());
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
