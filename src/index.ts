@@ -25,6 +25,8 @@ app.get("/health", (_req, res) => {
 // fitCheckPaymentMiddleware runs first — unpaid/unsigned requests get a 402 and never
 // reach multer or the vision call below.
 app.post("/fit-check", fitCheckPaymentMiddleware, upload.single("photo"), async (req, res) => {
+  const startedAt = Date.now();
+  console.log("[fit-check] paid request received");
   try {
     const occasion = req.body.occasion as Occasion | undefined;
 
@@ -55,8 +57,9 @@ app.post("/fit-check", fitCheckPaymentMiddleware, upload.single("photo"), async 
     );
 
     res.json({ occasion, ...result });
+    console.log(`[fit-check] completed in ${Date.now() - startedAt}ms`);
   } catch (err) {
-    console.error(err);
+    console.error(`[fit-check] failed after ${Date.now() - startedAt}ms:`, err);
     res.status(500).json({ error: "fit check failed", detail: (err as Error).message });
   }
 });
