@@ -1,6 +1,7 @@
 import { paymentMiddleware, x402ResourceServer } from "@okxweb3/x402-express";
 import { ExactEvmScheme } from "@okxweb3/x402-evm/exact/server";
 import { OKXFacilitatorClient } from "@okxweb3/x402-core";
+import { OCCASIONS } from "./rubric.js";
 
 type CaipNetwork = `${string}:${string}`;
 
@@ -47,7 +48,7 @@ export const fitCheckPaymentMiddleware = paymentMiddleware(
       ],
       description:
         "Rates an outfit photo against a specific occasion using a documented dress-code/color/tailoring reference standard. " +
-        "Required JSON body: { occasion: <one of the enum values in /health or the listing>, photo: <base64 string, data URI, or https URL of a jpeg/png/webp image> }. " +
+        `Required JSON body: { occasion: one of "${OCCASIONS.join('", "')}", photo: base64 string, data URI, or https URL of a jpeg/png/webp image }. ` +
         "Multipart form (fields \"occasion\" + \"photo\" file) is also accepted.",
       mimeType: "application/json",
     },
