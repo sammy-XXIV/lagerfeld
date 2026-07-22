@@ -45,7 +45,10 @@ export const fitCheckPaymentMiddleware = paymentMiddleware(
           price: PRICE,
         },
       ],
-      description: "Rates an outfit photo against a specific occasion using a documented dress-code/color/tailoring reference standard.",
+      description:
+        "Rates an outfit photo against a specific occasion using a documented dress-code/color/tailoring reference standard. " +
+        "Required JSON body: { occasion: <one of the enum values in /health or the listing>, photo: <base64 string, data URI, or https URL of a jpeg/png/webp image> }. " +
+        "Multipart form (fields \"occasion\" + \"photo\" file) is also accepted.",
       mimeType: "application/json",
     },
   },
