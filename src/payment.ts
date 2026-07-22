@@ -49,7 +49,8 @@ export const fitCheckPaymentMiddleware = paymentMiddleware(
       description:
         "Rates an outfit photo against a specific occasion using a documented dress-code/color/tailoring reference standard. " +
         `Required JSON body: { occasion: one of "${OCCASIONS.join('", "')}", photo: base64 string, data URI, or https URL of a jpeg/png/webp image }. ` +
-        "Multipart form (fields \"occasion\" + \"photo\" file) is also accepted.",
+        "Multipart form (fields \"occasion\" + \"photo\" file) is also accepted. " +
+        "Machine-readable JSON Schema for this body: GET /health -> fitCheckRequestSchema.",
       mimeType: "application/json",
     },
   },

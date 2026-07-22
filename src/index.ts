@@ -19,8 +19,22 @@ const upload = multer({
 
 const PORT = process.env.PORT ?? 3000;
 
+// Machine-parseable schema for POST /fit-check's request body, so a buyer's
+// calling agent can form a valid request without guessing from prose.
+const FIT_CHECK_REQUEST_SCHEMA = {
+  type: "object",
+  properties: {
+    occasion: { type: "string", enum: OCCASIONS },
+    photo: {
+      type: "string",
+      description: "base64 string, data URI, or https URL of a jpeg/png/webp image (or send as multipart form field \"photo\" instead)",
+    },
+  },
+  required: ["occasion", "photo"],
+} as const;
+
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", occasions: OCCASIONS });
+  res.json({ status: "ok", occasions: OCCASIONS, fitCheckRequestSchema: FIT_CHECK_REQUEST_SCHEMA });
 });
 
 // A2MCP entrypoint: POST /fit-check, "occasion" field plus a photo — either
