@@ -33,41 +33,45 @@ app.post("/fit-check", fitCheckPaymentMiddleware, upload.single("photo"), async 
   const startedAt = Date.now();
   console.log("[fit-check] paid request received");
   try {
-    const occasion = req.body.occasion as Occasion | undefined;
+    // Validate occasion and photo together, so a buyer with both wrong learns
+    // about both in this one paid response instead of discovering them one at
+    // a time across separate paid attempts.
+    const errors: string[] = [];
 
+    const occasion = req.body.occasion as Occasion | undefined;
     if (!occasion || !OCCASIONS.includes(occasion)) {
-      res.status(400).json({
-        error: `occasion must be one of: ${OCCASIONS.join(", ")}`,
-      });
-      return;
+      errors.push(`occasion must be one of: ${OCCASIONS.join(", ")}`);
     }
 
-    let photo;
+    let photo: Awaited<ReturnType<typeof resolveFromJsonField>> | undefined;
     try {
       if (req.file) {
         photo = resolveFromMulterFile(req.file);
       } else if (typeof req.body.photo === "string" && req.body.photo.length > 0) {
         photo = await resolveFromJsonField(req.body.photo);
       } else {
-        res.status(400).json({
-          error:
-            "photo is required — either multipart form field \"photo\" (jpeg/png/webp file), or JSON field \"photo\" (base64 string, data URI, or https URL)",
-        });
-        return;
+        errors.push(
+          "photo is required — either multipart form field \"photo\" (jpeg/png/webp file), or JSON field \"photo\" (base64 string, data URI, or https URL)"
+        );
       }
     } catch (err) {
       if (err instanceof PhotoError) {
-        res.status(400).json({ error: err.message });
-        return;
+        errors.push(err.message);
+      } else {
+        throw err;
       }
-      throw err;
     }
 
-    const imageBase64 = photo.buffer.toString("base64");
+    if (errors.length > 0) {
+      res.status(400).json({ errors });
+      return;
+    }
 
-    const result = await runFitCheck(imageBase64, photo.mediaType, occasion);
+    const imageBase64 = photo!.buffer.toString("base64");
 
-    res.json({ occasion, ...result });
+    const result = await runFitCheck(imageBase64, photo!.mediaType, occasion!);
+
+    res.json({ occasion: occasion!, ...result });
     console.log(`[fit-check] completed in ${Date.now() - startedAt}ms`);
   } catch (err) {
     console.error(`[fit-check] failed after ${Date.now() - startedAt}ms:`, err);
