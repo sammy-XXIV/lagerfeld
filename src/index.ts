@@ -23,13 +23,43 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok", occasions: OCCASIONS });
 });
 
+// For JSON-body requests, express.json() has already parsed req.body by this
+// point, so occasion + photo presence can be checked before charging — a
+// buyer with a doomed request gets a free 400 instead of a paid one. Multipart
+// requests aren't parsed until multer runs (after payment, below), so those
+// still fall through to the post-payment check.
+function preValidateJsonBody(req: express.Request, res: express.Response, next: express.NextFunction): void {
+  const contentType = req.headers["content-type"] ?? "";
+  if (contentType.includes("multipart/form-data")) {
+    next();
+    return;
+  }
+
+  const errors: string[] = [];
+  const occasion = req.body?.occasion as Occasion | undefined;
+  if (!occasion || !OCCASIONS.includes(occasion)) {
+    errors.push(`occasion must be one of: ${OCCASIONS.join(", ")}`);
+  }
+  if (typeof req.body?.photo !== "string" || req.body.photo.length === 0) {
+    errors.push(
+      "photo is required — either multipart form field \"photo\" (jpeg/png/webp file), or JSON field \"photo\" (base64 string, data URI, or https URL)"
+    );
+  }
+  if (errors.length > 0) {
+    res.status(400).json({ errors });
+    return;
+  }
+  next();
+}
+
 // A2MCP entrypoint: POST /fit-check, "occasion" field plus a photo — either
 // multipart form field "photo" (file), or JSON field "photo" (base64 string,
 // data URI, or https URL). Added JSON support after a buyer's x402 replay
 // flow turned out to be JSON-only with no multipart option.
-// fitCheckPaymentMiddleware runs first — unpaid/unsigned requests get a 402 and never
-// reach multer or the vision call below.
-app.post("/fit-check", fitCheckPaymentMiddleware, upload.single("photo"), async (req, res) => {
+// preValidateJsonBody catches missing/invalid occasion+photo before payment for
+// JSON requests; fitCheckPaymentMiddleware runs next — unpaid/unsigned requests
+// get a 402 and never reach multer or the vision call below.
+app.post("/fit-check", preValidateJsonBody, fitCheckPaymentMiddleware, upload.single("photo"), async (req, res) => {
   const startedAt = Date.now();
   console.log("[fit-check] paid request received");
   try {
