@@ -10,7 +10,8 @@ process.on("uncaughtException", (err) => console.error("uncaughtException:", err
 process.on("unhandledRejection", (err) => console.error("unhandledRejection:", err));
 
 const app = express();
-app.use(express.json());
+// Base64-encoded photos inflate ~33% over raw bytes; match the 8MB multer limit with headroom.
+app.use(express.json({ limit: "12mb" }));
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
